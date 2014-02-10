@@ -1,0 +1,11 @@
+Creating summariser
+Created the tree successfully using benchmark.jmx
+Starting the test @ Mon May 13 00:23:27 CEST 2013 (1368397407319)
+Waiting for possible shutdown message on port 4445
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary +      1 in   0,1s =   14,5/s Avg:    69 Min:    69 Max:    69 Err:     0 (0,00%) Active: 1 Started: 1 Finished: 0
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary +  23892 in   5,2s = 4574,4/s Avg:     1 Min:     0 Max:     7 Err:     0 (0,00%) Active: 10 Started: 10 Finished: 0
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary =  23893 in   5,3s = 4512,4/s Avg:     1 Min:     0 Max:    69 Err:     0 (0,00%)
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary +  45184 in     6s = 7529,4/s Avg:     1 Min:     0 Max:     6 Err:     0 (0,00%) Active: 10 Started: 10 Finished: 0
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary =  69077 in  11,3s = 6116,3/s Avg:     1 Min:     0 Max:    69 Err:     0 (0,00%)
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary +  45512 in     6s = 7584,1/s Avg:     1 Min:     0 Max:     7 Err:     0 (0,00%) Active: 10 Started: 10 Finished: 0
+2011/05/16 16:05:21 INFO  - jmeter.reporters.Summariser: summary = 114589 in  17,3s = 6626,3/s Avg:     1 Min:     0 Max:    69 Err:     0 (0,00%)

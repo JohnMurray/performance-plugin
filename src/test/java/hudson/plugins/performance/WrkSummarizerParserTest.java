@@ -22,7 +22,7 @@ public class WrkSummarizerParserTest {
   public void before() {
     parser = new WrkSummarizerParser(null);
     logger = System.out;
-    listener = new StreamTaskListener((java.io.OutputStream) System.out);
+    listener = new StreamTaskListener((java.io.OutputStream) logger);
   }
 
   @Test
