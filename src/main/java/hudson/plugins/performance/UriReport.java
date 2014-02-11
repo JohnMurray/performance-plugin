@@ -3,6 +3,8 @@ package hudson.plugins.performance;
 import hudson.model.AbstractBuild;
 import hudson.model.ModelObject;
 import hudson.util.ChartUtil;
+import hudson.util.DataSetBuilder;
+import hudson.util.ChartUtil.NumberOnlyBuildLabel;
 
 import java.io.UnsupportedEncodingException;
 import java.io.IOException;
@@ -81,6 +83,19 @@ public abstract class UriReport extends AbstractReport implements  Serializable,
   public abstract long getMin();
   public abstract double getTotalTrafficInKb();
   public abstract int size();
+  /**
+   * Given a DataSetBuilder, populate the builder with averages
+   * information.
+   * 
+   * @param dataSet  DataSetBuilde<K,V>
+   *          K (String)                URI of report/sample
+   *          V (NumberOnlyBuildLabel)  Label provided as second parameter
+   * @param label    Label to use while building data-set
+   */
+  public abstract void buildAverageDataSet(DataSetBuilder<String, NumberOnlyBuildLabel> dataSet,
+      NumberOnlyBuildLabel label);
+  public abstract void buildAverageDataSetWithUriFilter(DataSetBuilder<String, NumberOnlyBuildLabel> dataSet,
+      NumberOnlyBuildLabel label, String filter);
   
   
   

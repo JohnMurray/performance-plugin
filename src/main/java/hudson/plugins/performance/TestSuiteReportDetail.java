@@ -94,40 +94,11 @@ public class TestSuiteReportDetail implements ModelObject {
           continue;
         }
 
-        // Added AccumulatedUriReports
-        List<HttpSample> allSamples = new ArrayList<HttpSample>();
         for (UriReport currentReport : performanceReport.getUriReportMap().values()) {
-          if (currentReport instanceof AccumulatedUriReport) {
-            allSamples.addAll(((AccumulatedUriReport)currentReport).getHttpSampleList());
-          }
-        }
-        Collections.sort(allSamples);
-        for (HttpSample sample : allSamples) {
-          if (sample.getUri().equals(testUri)) {
-            if (sample.hasError()) {
-              // we set duration as 0 for tests failed because of errors
-              dataSetBuilderAverage.add(0, sample.getUri(), label);
-            } else {
-              dataSetBuilderAverage.add(sample.getDuration(), sample.getUri(),
-                  label);
-            }
-          }
+          currentReport.buildAverageDataSetWithUriFilter(
+              dataSetBuilderAverage, label, testUri);
         }
         
-        // Added AggregateUriReports
-        for (UriReport currentReport : performanceReport.getUriReportMap().values()) {
-          if (currentReport instanceof AggregateUriReport) {
-            if (currentReport.getUri().equals(testUri)) {
-              AggregateUriReport aggReport = (AggregateUriReport) currentReport;
-              for (int i = 0; i < aggReport.size() - aggReport.countErrors(); i++) {
-                dataSetBuilderAverage.add(aggReport.getAverage(), aggReport.getUri(), label);
-              }
-              for (int i = 0; i < aggReport.countErrors(); i++) {
-                dataSetBuilderAverage.add(0, aggReport.getUri(), label);
-              }
-            }
-          }
-        }
       }
       nbBuildsToAnalyze--;
     }

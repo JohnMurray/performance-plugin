@@ -1,6 +1,8 @@
 package hudson.plugins.performance;
 
 import hudson.util.ChartUtil;
+import hudson.util.ChartUtil.NumberOnlyBuildLabel;
+import hudson.util.DataSetBuilder;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -169,6 +171,34 @@ public class AccumulatedUriReport extends UriReport implements Serializable {
     ChartUtil.generateGraph(request, response,
         PerformanceProjectAction.createSummarizerTrend(dataset, uri), 400, 200);
 
+  }
+
+  /**
+   * Given a DataSetBuilder, populate the builder with averages
+   * information.
+   * 
+   * @param dataSet  DataSetBuilde<K,V>
+   *          K (String)                URI of report/sample
+   *          V (NumberOnlyBuildLabel)  Label provided as second parameter
+   * @param label    Label to use while building data-set
+   */
+  public void buildAverageDataSet(DataSetBuilder<String, NumberOnlyBuildLabel> dataSet,
+      NumberOnlyBuildLabel label) {
+    buildAverageDataSetWithUriFilter(dataSet, label, null);
+  }
+
+  public void buildAverageDataSetWithUriFilter(DataSetBuilder<String, NumberOnlyBuildLabel> dataSet,
+      NumberOnlyBuildLabel label, String filter) {
+    for (HttpSample sample : httpSampleList) {
+      if (filter == null || sample.getUri().equals(filter)) {
+        if (sample.hasError()) {
+          // we set duration as 0 for tests failed because of errors
+          dataSet.add(0, sample.getUri(), label);
+        } else {
+          dataSet.add(sample.getDuration(), sample.getUri(), label);
+        }
+      }
+    }
   }
   
   
