@@ -94,10 +94,12 @@ public class TestSuiteReportDetail implements ModelObject {
           continue;
         }
 
+        // Added AccumulatedUriReports
         List<HttpSample> allSamples = new ArrayList<HttpSample>();
-        for (UriReport currentReport : performanceReport.getUriReportMap()
-            .values()) {
-          allSamples.addAll(currentReport.getHttpSampleList());
+        for (UriReport currentReport : performanceReport.getUriReportMap().values()) {
+          if (currentReport instanceof AccumulatedUriReport) {
+            allSamples.addAll(((AccumulatedUriReport)currentReport).getHttpSampleList());
+          }
         }
         Collections.sort(allSamples);
         for (HttpSample sample : allSamples) {
@@ -108,6 +110,21 @@ public class TestSuiteReportDetail implements ModelObject {
             } else {
               dataSetBuilderAverage.add(sample.getDuration(), sample.getUri(),
                   label);
+            }
+          }
+        }
+        
+        // Added AggregateUriReports
+        for (UriReport currentReport : performanceReport.getUriReportMap().values()) {
+          if (currentReport instanceof AggregateUriReport) {
+            if (currentReport.getUri().equals(testUri)) {
+              AggregateUriReport aggReport = (AggregateUriReport) currentReport;
+              for (int i = 0; i < aggReport.size() - aggReport.countErrors(); i++) {
+                dataSetBuilderAverage.add(aggReport.getAverage(), aggReport.getUri(), label);
+              }
+              for (int i = 0; i < aggReport.countErrors(); i++) {
+                dataSetBuilderAverage.add(0, aggReport.getUri(), label);
+              }
             }
           }
         }
@@ -189,17 +206,12 @@ public class TestSuiteReportDetail implements ModelObject {
         continue;
       }
 
-      List<HttpSample> allSamples = new ArrayList<HttpSample>();
-      for (UriReport currentReport : performanceReport.getUriReportMap()
-          .values()) {
-        allSamples.addAll(currentReport.getHttpSampleList());
-      }
-      Collections.sort(allSamples);
-      for (HttpSample sample : allSamples) {
-        if (!performanceReportTestCaseList.contains(sample.getUri())) {
-          performanceReportTestCaseList.add(sample.getUri());
+      for (UriReport currentReport: performanceReport.getUriReportMap().values()) {
+        if (!performanceReportTestCaseList.contains(currentReport.getUri())) {
+          performanceReportTestCaseList.add(currentReport.getUri());
         }
       }
+      
     }
 
     Collections.sort(performanceReportTestCaseList);

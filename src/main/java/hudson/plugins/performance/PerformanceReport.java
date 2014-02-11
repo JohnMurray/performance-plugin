@@ -36,6 +36,14 @@ public class PerformanceReport extends AbstractReport implements Serializable,
 
   private PerformanceReport lastBuildReport;
 
+  /**
+   * Add HttpSamples to the current Performance Report. This will ultimately
+   * result in adding or modifying an existing @{link UriReport} that handles
+   * HttpSamples (currently @{link AccumulatedUriReport}).
+   * 
+   * @param pHttpSample  The HttpSample being added
+   * @throws SAXException
+   */
   public void addSample(HttpSample pHttpSample) throws SAXException {
     String uri = pHttpSample.getUri();
     if (uri == null) {
@@ -48,11 +56,28 @@ public class PerformanceReport extends AbstractReport implements Serializable,
     String staplerUri = uri.replace("http:", "").replaceAll("/", "_");
     UriReport uriReport = uriReportMap.get(staplerUri);
     if (uriReport == null) {
-      uriReport = new UriReport(this, staplerUri, uri);
-      uriReportMap.put(staplerUri, uriReport);
+      AccumulatedUriReport accUriReport = new AccumulatedUriReport(this, staplerUri, uri);
+      accUriReport.addHttpSample(pHttpSample);
+      uriReportMap.put(staplerUri, accUriReport);
     }
-    uriReport.addHttpSample(pHttpSample);
+    else if (uriReport instanceof AccumulatedUriReport) {
+      ((AccumulatedUriReport)uriReport).addHttpSample(pHttpSample);
+    }
+    else {
+      throw new RuntimeException("Cannot add a sample to a UriReport that is " +
+      		"not an instance of AccumulatedUriReport");
+    }
 
+  }
+  
+  /**
+   * Directly add {@link UriReport}s to the current PerformanceReport.
+   * 
+   * @param report  The {@link UriReport} to be added
+   */
+  public void addUriReport(UriReport report) {
+    String staplerUri = report.getUri().replace("http:", "").replaceAll("/", "_");
+    uriReportMap.put(staplerUri, report);
   }
 
   public int compareTo(PerformanceReport jmReport) {
@@ -71,16 +96,7 @@ public class PerformanceReport extends AbstractReport implements Serializable,
   }
 
   public double errorPercent() {
-    if (ifSummarizerParserUsed(reportFileName)) {
-      float nbError = 0;
-      for (UriReport currentReport : uriReportMap.values()) {
-        nbError += Float.valueOf(currentReport.getSummarizerErrors());
-      }
-      return (double) nbError / uriReportMap.size();
-
-    } else {
-      return size() == 0 ? 0 : ((double) countErrors()) / size() * 100;
-    }
+    return size() == 0 ? 0 : ((double) countErrors()) / size() * 100;
   }
 
   public long getAverage() {
@@ -114,12 +130,12 @@ public class PerformanceReport extends AbstractReport implements Serializable,
     long result = 0;
     int size = size();
     if (size != 0) {
-      List<HttpSample> allSamples = new ArrayList<HttpSample>();
+      List<Long> allSamples = new ArrayList<Long>();
       for (UriReport currentReport : uriReportMap.values()) {
-        allSamples.addAll(currentReport.getHttpSampleList());
+        allSamples.add(currentReport.get90Line());
       }
       Collections.sort(allSamples);
-      result = allSamples.get((int) (allSamples.size() * .9)).getDuration();
+      result = allSamples.get((int) (allSamples.size() * .9));
     }
     return result;
   }
@@ -128,12 +144,12 @@ public class PerformanceReport extends AbstractReport implements Serializable,
     long result = 0;
     int size = size();
     if (size != 0) {
-      List<HttpSample> allSamples = new ArrayList<HttpSample>();
+      List<Long> allSamples = new ArrayList<Long>();
       for (UriReport currentReport : uriReportMap.values()) {
-        allSamples.addAll(currentReport.getHttpSampleList());
+        allSamples.add(currentReport.getMedian());
       }
       Collections.sort(allSamples);
-      result = allSamples.get((int) (allSamples.size() * .5)).getDuration();
+      result = allSamples.get((int) (allSamples.size() * .5));
     }
     return result;
   }

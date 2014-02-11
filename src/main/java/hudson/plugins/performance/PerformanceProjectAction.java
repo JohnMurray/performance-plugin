@@ -11,6 +11,7 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -330,22 +331,39 @@ public final class PerformanceProjectAction implements Action {
           nbBuildsToAnalyze--;
           continue;
         }
-
+        
+        
+        // Added AccumulatedUriReports
         List<HttpSample> allSamples = new ArrayList<HttpSample>();
-        for (UriReport currentReport : performanceReport.getUriReportMap()
-            .values()) {
-          allSamples.addAll(currentReport.getHttpSampleList());
+        for (UriReport currentReport : performanceReport.getUriReportMap().values()) {
+          if (currentReport instanceof AccumulatedUriReport) {
+            allSamples.addAll(((AccumulatedUriReport)currentReport).getHttpSampleList());
+          }
         }
         Collections.sort(allSamples);
         for (HttpSample sample : allSamples) {
           if (sample.hasError()) {
-            // we set duration as 0 for failed tests
+            // we set duration as 0 for tests failed because of errors
             dataSetBuilderAverage.add(0, sample.getUri(), label);
           } else {
             dataSetBuilderAverage.add(sample.getDuration(), sample.getUri(),
                 label);
           }
         }
+        
+        // Added AggregateUriReports
+        for (UriReport currentReport : performanceReport.getUriReportMap().values()) {
+          if (currentReport instanceof AggregateUriReport) {
+            AggregateUriReport aggReport = (AggregateUriReport) currentReport;
+            for (int i = 0; i < aggReport.size() - aggReport.countErrors(); i++) {
+              dataSetBuilderAverage.add(aggReport.getAverage(), aggReport.getUri(), label);
+            }
+            for (int i = 0; i < aggReport.countErrors(); i++) {
+              dataSetBuilderAverage.add(0, aggReport.getUri(), label);
+            }
+          }
+        }
+
 
       }
       nbBuildsToAnalyze--;
@@ -458,10 +476,12 @@ public final class PerformanceProjectAction implements Action {
         }
 
         for (String key : performanceReport.getUriReportMap().keySet()) {
-          Long methodAvg = performanceReport.getUriReportMap().get(key)
-              .getAverage();
-          float methodErrors = Float.valueOf(performanceReport
-              .getUriReportMap().get(key).getSummarizerErrors());
+          UriReport report = performanceReport.getUriReportMap().get(key);
+
+          Long methodAvg = report.getAverage();
+          float methodErrors = report.countErrors() / report.size() *100;
+          methodErrors = Float.valueOf(new DecimalFormat("#.##").format(methodErrors).replace(",", "."));
+
           dataSetBuilderSummarizer.add(methodAvg, label, key);
           dataSetBuilderSummarizerErrors.add(methodErrors, label, key);
         }

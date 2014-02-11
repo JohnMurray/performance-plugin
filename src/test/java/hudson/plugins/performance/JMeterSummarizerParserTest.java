@@ -42,12 +42,12 @@ public class JMeterSummarizerParserTest {
         assertTrue(report.size() > 0);
         
         // some assertions based on the test-report
-        assertEquals(report.get90Line(), 69);
-        assertEquals(report.getAverage(), 18);
-        assertEquals(report.getAverageSizeInKb(), 0f, 0f);  // untracked at the moment
-        assertEquals(report.getMax(), 69);
-        assertEquals(report.getMin(), 1);
-        assertEquals(report.getMedian(), 1);
+        assertEquals(69, report.get90Line());
+        assertEquals(18, report.getAverage());
+        assertEquals(0f, report.getAverageSizeInKb(), 0f);  // untracked at the moment
+        assertEquals(69, report.getMax());
+        assertEquals(0, report.getMin());
+        assertEquals(1, report.getMedian());
         
         for (UriReport uriReport : report.getUriReportMap().values()) {
           assertEquals(uriReport.errorPercent(), 0f, 0f);

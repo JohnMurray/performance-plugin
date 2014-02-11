@@ -58,7 +58,7 @@ public class PerformanceReportTest {
 				.getUriReportMap();
 		uriReport = uriReportMap.get(uri);
 		assertNotNull(uriReport);
-		List<HttpSample> httpSampleList = uriReport.getHttpSampleList();
+		List<HttpSample> httpSampleList = ((AccumulatedUriReport)uriReport).getHttpSampleList();
 		assertEquals(1, httpSampleList.size());
 		assertEquals(sample1, httpSampleList.get(0));
 	}
@@ -87,14 +87,14 @@ public class PerformanceReportTest {
 		assertEquals(2, uriReportMap.size());
 		String loginUri = "Home";
 		UriReport firstUriReport = uriReportMap.get(loginUri);
-		HttpSample firstHttpSample = firstUriReport.getHttpSampleList().get(0);
+		HttpSample firstHttpSample = ((AccumulatedUriReport)firstUriReport).getHttpSampleList().get(0);
 		assertEquals(loginUri, firstHttpSample.getUri());
 		assertEquals(14720, firstHttpSample.getDuration());
 		assertEquals(new Date(1296846793179L), firstHttpSample.getDate());
 		assertTrue(firstHttpSample.isSuccessful());
 		String logoutUri = "Workgroup";
 		UriReport secondUriReport = uriReportMap.get(logoutUri);
-		HttpSample secondHttpSample = secondUriReport.getHttpSampleList()
+		HttpSample secondHttpSample = ((AccumulatedUriReport)secondUriReport).getHttpSampleList()
 				.get(0);
 		assertEquals(logoutUri, secondHttpSample.getUri());
 		assertEquals(278, secondHttpSample.getDuration());
@@ -128,7 +128,7 @@ public class PerformanceReportTest {
 
 		int[] expectedDurations = {894, 1508, 1384, 1581, 996};
 		for (int i = 0; i < expectedDurations.length; i++) {
-			HttpSample sample = report.getHttpSampleList().get(i);
+			HttpSample sample = ((AccumulatedUriReport)report).getHttpSampleList().get(i);
 			assertEquals(expectedDurations[i], sample.getDuration());
 		}
 	}
@@ -142,14 +142,14 @@ public class PerformanceReportTest {
 		assertEquals(5, uriReportMap.size());
 		String firstUri = "testGetMin";
 		UriReport firstUriReport = uriReportMap.get(firstUri);
-		HttpSample firstHttpSample = firstUriReport.getHttpSampleList().get(0);
+		HttpSample firstHttpSample = ((AccumulatedUriReport)firstUriReport).getHttpSampleList().get(0);
 		assertEquals(firstUri, firstHttpSample.getUri());
 		assertEquals(31, firstHttpSample.getDuration());
 		assertEquals(new Date(0L), firstHttpSample.getDate());
 		assertTrue(firstHttpSample.isSuccessful());
 		String lastUri = "testGetMax";
 		UriReport secondUriReport = uriReportMap.get(lastUri);
-		HttpSample secondHttpSample = secondUriReport.getHttpSampleList()
+		HttpSample secondHttpSample = ((AccumulatedUriReport)secondUriReport).getHttpSampleList()
 				.get(0);
 		assertEquals(lastUri, secondHttpSample.getUri());
 		assertEquals(26, secondHttpSample.getDuration());
@@ -166,13 +166,13 @@ public class PerformanceReportTest {
 	    assertEquals(1, uriReportMap.size());
 	    String uri = "unknown";
 	    UriReport report = uriReportMap.get(uri);
-	    HttpSample firstHttpSample = report.getHttpSampleList().get(0);
+	    HttpSample firstHttpSample = ((AccumulatedUriReport)report).getHttpSampleList().get(0);
 	    assertEquals(uri, firstHttpSample.getUri());
 	    assertEquals(890, firstHttpSample.getDuration());
 	    assertEquals(new Date(0L), firstHttpSample.getDate());
 	    assertTrue(firstHttpSample.isSuccessful());
 	    
-	    HttpSample secondHttpSample = report.getHttpSampleList().get(1);
+	    HttpSample secondHttpSample = ((AccumulatedUriReport)report).getHttpSampleList().get(1);
       assertEquals(uri, secondHttpSample.getUri());
       assertEquals(50, secondHttpSample.getDuration());
       assertEquals(new Date(0L), secondHttpSample.getDate());

@@ -63,6 +63,12 @@ public class JmeterSummarizerParser extends PerformanceReportParser {
         r.setReportFileName(f.getName());
         r.setReportFileName(f.getName());
 
+        AggregateUriReport report = new AggregateUriReport(r, "", "");
+        report.setMinResponseTime(Long.MAX_VALUE);
+        long averageTimeCount = 0;
+        
+        List<Long> averages = new ArrayList<Long>();
+
         s = new Scanner(f);
         String key;
         String line;
@@ -77,38 +83,52 @@ public class JmeterSummarizerParser extends PerformanceReportParser {
                     scanner = new Scanner(line);
                     Pattern delimiter = scanner.delimiter();
                     scanner.useDelimiter("INFO"); // as jmeter logs INFO mode
-                    HttpSample sample = new HttpSample();
                     String dateString = scanner.next();
-                    sample.setDate(dateFormat.parse(dateString));
+                    report.setDate(dateFormat.parse(dateString));
                     scanner.findInLine("jmeter.reporters.Summariser:");
                     scanner.useDelimiter("\\+");
                     key = scanner.next().trim();
                     scanner.useDelimiter(delimiter);
                     scanner.next();
-                    sample.setSummarizerSamples(scanner.nextLong()); // set SamplesCount
+
+                    int reqCount = scanner.nextInt();
+                    report.setRequestCount(reqCount + report.size());
+
                     scanner.findInLine("Avg:"); // set response time
-                    sample.setDuration(scanner.nextLong());
-                    sample.setSuccessful(true);
+                    long avgResTime = scanner.nextLong();
+                    averages.add(avgResTime);
+                    report.setAverageResponseTime(report.getAverage() + avgResTime);
+                    averageTimeCount++;
+
                     scanner.findInLine("Min:"); // set MIN
-                    sample.setSummarizerMin(scanner.nextLong());
+                    long min = scanner.nextLong();
+                    if (min < report.getMin()) { report.setMinResponseTime(min); }
+
                     scanner.findInLine("Max:"); // set MAX
-                    sample.setSummarizerMax(scanner.nextLong());
+                    long max = scanner.nextLong();
+                    if (max > report.getMax()) { report.setMaxResponseTime(max); }
+
                     scanner.findInLine("Err:"); // set errors count
-                    sample.setSummarizerErrors(scanner.nextInt());
+                    int errCount = scanner.nextInt();
+                    report.setErrorCount(report.countErrors() + errCount);
+
                     // sample.setSummarizerErrors(
                     // Float.valueOf(scanner.next().replaceAll("[()%]","")));
-                    sample.setUri(key);
-                    r.addSample(sample);
+                    report.setUri(key);
             } finally {
               if (scanner != null) scanner.close();
             }
           }
         }
+
+        report.setAverageResponseTime((long)(report.getAverage() / (float)averageTimeCount));
+        Collections.sort(averages);
+        report.setMedian(averages.get((int) (averages.size() * 0.5)));
+
+        r.addUriReport(report);
         result.add(r);
       } catch (FileNotFoundException e) {
         logger.println("File not found" + e.getMessage());
-      } catch (SAXException e) {
-        logger.println(e.getMessage());
       } catch (ParseException e) {
         logger.println(e.getMessage());
       } finally {

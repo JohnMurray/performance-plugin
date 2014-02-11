@@ -15,11 +15,11 @@ public class UriReportTest {
 	private static final long AVERAGE = 5;
 	private static final long MIN = 0;
 	private static final long MAX = 10;
-	private UriReport uriReport;
+	private AccumulatedUriReport uriReport;
 
 	@Before
 	public void setUp() {
-		uriReport = new UriReport(null, null, null);
+		uriReport = new AccumulatedUriReport(null, null, null);
 		HttpSample httpSample1 = new HttpSample();
 		httpSample1.setDuration(MAX);
 		Date date = new Date();

@@ -84,7 +84,7 @@ public class WrkSummarizerParser extends PerformanceReportParser {
       Scanner s = null;
 
       try {
-        HttpSample sample = new HttpSample();
+        AggregateUriReport report = new AggregateUriReport(r, "", "");
 
         r.setReportFileName(f.getName());
         logger.println("Performance: Parsing WrkSummarizer report file "
@@ -109,7 +109,7 @@ public class WrkSummarizerParser extends PerformanceReportParser {
               scanner.next();
               String uri = scanner.next();
 
-              sample.setUri(uri);
+              report.setUri(uri);
               break;
             case LATENCY_DIST:
               Scanner latencyScanner = new Scanner(line.toLowerCase());
@@ -120,8 +120,8 @@ public class WrkSummarizerParser extends PerformanceReportParser {
               long latencyMax = getTime(latencyScanner.next(), logger,
                   TimeUnit.MILLISECOND);
 
-              sample.setDuration(latencyAvg);
-              sample.setSummarizerMax(latencyMax);
+              report.setAverageResponseTime(latencyAvg);
+              report.setMaxResponseTime(latencyMax);
               break;
             case REQ_SEC_DIST:
               // float reqSecAvg = Float.parseFloat(secondToken);
@@ -132,13 +132,12 @@ public class WrkSummarizerParser extends PerformanceReportParser {
             case SUMMARY:
               long totalReq = Long.parseLong(firstToken);
               Scanner summaryScanner = new Scanner(line.toLowerCase());
-              summaryScanner.next();
-              summaryScanner.next();
-              summaryScanner.next();
-              // long totalTime = getTime(summaryScanner.next(), logger,
-              // TimeUnit.SECOND);
+              // summaryScanner.next();
+              // summaryScanner.next();
+              // summaryScanner.next();
+              // long totalTime = getTime(summaryScanner.next(), logger, TimeUnit.SECOND);
 
-              sample.setSummarizerSamples(totalReq);
+              report.setRequestCount((int)totalReq);
               summaryScanner.close();
               break;
             case ERROR_COUNT:
@@ -146,7 +145,7 @@ public class WrkSummarizerParser extends PerformanceReportParser {
               scanner.next();
               int numErrors = scanner.nextInt();
 
-              sample.setSummarizerErrors(numErrors);
+              report.setErrorCount(numErrors);
               break;
             case REQ_SEC:
             case TRANSFER_SEC:
@@ -166,14 +165,11 @@ public class WrkSummarizerParser extends PerformanceReportParser {
           }
         }
 
-        sample.setSuccessful(true);
-        sample.setDate(new Date());
-        r.addSample(sample);
+        report.setDate(new Date());
+        r.addUriReport(report);
 
       } catch (FileNotFoundException e) {
         logger.println("Performance: File not found " + e.getMessage());
-      } catch (SAXException e) {
-        logger.println("Performance: " + e.getMessage());
       } finally {
         if (s != null)
           s.close();

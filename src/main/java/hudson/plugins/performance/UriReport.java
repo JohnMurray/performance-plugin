@@ -24,7 +24,7 @@ import org.kohsuke.stapler.StaplerResponse;
  * 
  * This object belongs under {@link PerformanceReport}.
  */
-public class UriReport extends AbstractReport implements  Serializable, ModelObject,
+public abstract class UriReport extends AbstractReport implements  Serializable, ModelObject,
     Comparable<UriReport> {
 
   private static final long serialVersionUID = 6377220939528230222L;
@@ -32,24 +32,19 @@ public class UriReport extends AbstractReport implements  Serializable, ModelObj
   public final static String END_PERFORMANCE_PARAMETER = ".endperformanceparameter";
 
   /**
-   * Individual HTTP invocations to this URI and how they went.
-   */
-  private final List<HttpSample> httpSampleList = new ArrayList<HttpSample>();
-
-  /**
    * The parent object to which this object belongs.
    */
-  private final PerformanceReport performanceReport;
+  protected final PerformanceReport performanceReport;
 
   /**
    * Escaped {@link #uri} that doesn't contain any letters that cannot be used
    * as a token in URL.
    */
-  private final String staplerUri;
+  private String staplerUri;
   
-  private UriReport lastBuildUriReport;
+  protected UriReport lastBuildUriReport;
 
-  private String uri;
+  protected String uri;
 
   UriReport(PerformanceReport performanceReport, String staplerUri, String uri) {
     this.performanceReport = performanceReport;
@@ -57,75 +52,42 @@ public class UriReport extends AbstractReport implements  Serializable, ModelObj
     this.uri = uri;
   }
 
-  public void addHttpSample(HttpSample httpSample) {
-    httpSampleList.add(httpSample);
-  }
-
+  /**
+   * Compare UriReports based on the URI. This ensures that we can avoid
+   * creating multiple reports for the same URI.
+   */
   public int compareTo(UriReport uriReport) {
     if (uriReport == this) {
       return 0;
     }
     return uriReport.getUri().compareTo(this.getUri());
   }
+  
+  
+  
+  
+  // abstract methods
 
-  public int countErrors() {
-    int nbError = 0;
-    for (HttpSample currentSample : httpSampleList) {
-      if (!currentSample.isSuccessful()) {
-        nbError++;
-      }
-    }
-    return nbError;
-  }
+  public abstract int countErrors();
+  public abstract long getAverage();
+  public abstract long get90Line();
+  /**
+   * Return a comma delimited list of all status-codes returned
+   * @return
+   */
+  public abstract String getHttpCode();
+  public abstract long getMedian();
+  public abstract long getMax();
+  public abstract long getMin();
+  public abstract double getTotalTrafficInKb();
+  public abstract int size();
+  
+  
+  
+  // concrete methods
 
   public double errorPercent() {
     return ((double) countErrors()) / size() * 100;
-  }
-
-  public long getAverage() {
-    long average = 0;
-    for (HttpSample currentSample : httpSampleList) {
-      average += currentSample.getDuration();
-    }
-    return average / size();
-  }
-  
-  public double getAverageSizeInKb(){ 
-	  double average = 0 ; 
-	  for (HttpSample currentSample : httpSampleList) {
-	      average += currentSample.getSizeInKb();
-	    }
-	    return roundTwoDecimals(average / size());
-  }
-
-  public long get90Line() {
-    long result = 0;
-    Collections.sort(httpSampleList);
-    if (httpSampleList.size() > 0) {
-      result = httpSampleList.get((int) (httpSampleList.size() * .9)).getDuration();
-    }
-    return result;
-  }
-  
-  public String getHttpCode() {
-    String result = "";
-    
-    for (HttpSample currentSample : httpSampleList) {
-      if ( !result.matches( ".*"+currentSample.getHttpCode()+".*" ) ) {
-          result += ( result.length() > 1 ) ? ","+currentSample.getHttpCode() : currentSample.getHttpCode();
-      }
-    }
-    
-    return result;
-  }
-
-  public long getMedian() {
-    long result = 0;
-    Collections.sort(httpSampleList);
-    if (httpSampleList.size() > 0) {
-      result = httpSampleList.get((int) (httpSampleList.size() * .5)).getDuration();
-    }
-    return result;
   }
 
   public AbstractBuild<?, ?> getBuild() {
@@ -136,46 +98,6 @@ public class UriReport extends AbstractReport implements  Serializable, ModelObj
     return getUri();
   }
 
-  public List<HttpSample> getHttpSampleList() {
-    return httpSampleList;
-  }
-
-  public PerformanceReport getPerformanceReport() {
-    return performanceReport;
-  }
-
-  public long getMax() {
-    long max = Long.MIN_VALUE;
-    for (HttpSample currentSample : httpSampleList) {
-      max = Math.max(max, currentSample.getDuration());
-    }
-    return max;
-  }
-  
-  public double getTotalTrafficInKb(){ 
-	  double traffic = 0 ; 
-	  for (HttpSample currentSample : httpSampleList) {
-		  traffic += currentSample.getSizeInKb();
-	    }
-	    return roundTwoDecimals(traffic);
-  }
-
-  public long getMin() {
-    long min = Long.MAX_VALUE;
-    for (HttpSample currentSample : httpSampleList) {
-      min = Math.min(min, currentSample.getDuration());
-    }
-    return min;
-  }
-
-  public String getStaplerUri() {
-    return staplerUri;
-  }
-
-  public String getUri() {
-    return uri;
-  }
-
   public String getShortUri() {
     if ( uri.length() > 130 ) {
         return uri.substring( 0, 129 );
@@ -183,16 +105,8 @@ public class UriReport extends AbstractReport implements  Serializable, ModelObj
     return uri;
   }
   
-  public boolean isFailed() {
-    return countErrors() != 0;
-  }
-
-  public void setUri(String uri) {
-    this.uri = uri;
-  }
-
-  public int size() {
-    return httpSampleList.size();
+  public double getAverageSizeInKb() {
+    return roundTwoDecimals(getTotalTrafficInKb() / (double)size());
   }
 
   public String encodeUriReport() throws UnsupportedEncodingException {
@@ -203,10 +117,20 @@ public class UriReport extends AbstractReport implements  Serializable, ModelObj
     return URLEncoder.encode(sb.toString(), "UTF-8");
   }
 
-  public void addLastBuildUriReport( UriReport lastBuildUriReport ) {
-      this.lastBuildUriReport = lastBuildUriReport;
+  /**
+   * Simple utility function to round long decimals to have at most a
+   * precision of two.
+   * 
+   * @param d  Double value to round
+   */
+  protected double roundTwoDecimals(double d) {
+    DecimalFormat twoDForm = new DecimalFormat("#.##");
+    return Double.valueOf(twoDForm.format(d));
   }
   
+  
+  
+  // diff methods (possibly should be abstracted)
   public long getAverageDiff() {
       if ( lastBuildUriReport == null ) {
           return 0;
@@ -247,67 +171,76 @@ public class UriReport extends AbstractReport implements  Serializable, ModelObj
       return size() - lastBuildUriReport.size();
   }
 
-  public long getSummarizerMax() {
-    long max =  Long.MIN_VALUE;
-    for (HttpSample currentSample : httpSampleList) {
-        max = Math.max(max, currentSample.getSummarizerMax());
-    }
-    return max;
+  
+  
+
+  // getters and setters
+
+
+  public PerformanceReport getPerformanceReport() {
+    return performanceReport;
+  }
+  public String getStaplerUri() {
+    return staplerUri;
+  }
+  
+  public boolean isFailed() {
+    return countErrors() != 0;
   }
 
-  public long getSummarizerMin() {
-    long min = Long.MAX_VALUE;
-    for (HttpSample currentSample : httpSampleList) {
-        min = Math.min(min, currentSample.getSummarizerMin());
-    }
-    return min;
+  public String getUri() {
+    return uri;
   }
 
-  public long getSummarizerSize() {
-    long size=0;
-    for (HttpSample currentSample : httpSampleList) {
-        size+=currentSample.getSummarizerSamples();
-    }
-    return size;
+  public void setUri(String uri) {
+    this.uri = uri;
+    this.staplerUri = uri.replace("http:", "").replace("/", "_");
+  }
+  
+  public String getStapleUri() {
+    return staplerUri;
   }
 
-  public String getSummarizerErrors() {
-    float nbError = 0;
-    for (HttpSample currentSample : httpSampleList) {
-        nbError+=currentSample.getSummarizerErrors();
-    }
-    return new DecimalFormat("#.##").format(nbError/getSummarizerSize()*100).replace(",", ".");     
+  public void addLastBuildUriReport( UriReport lastBuildUriReport ) {
+      this.lastBuildUriReport = lastBuildUriReport;
   }
+  
 
 
-    public void doSummarizerTrendGraph(StaplerRequest request,
-                                StaplerResponse response) throws IOException{
+//  public long getSummarizerMax() {
+//    long max =  Long.MIN_VALUE;
+//    for (HttpSample currentSample : httpSampleList) {
+//        max = Math.max(max, currentSample.getSummarizerMax());
+//    }
+//    return max;
+//  }
+//
+//  public long getSummarizerMin() {
+//    long min = Long.MAX_VALUE;
+//    for (HttpSample currentSample : httpSampleList) {
+//        min = Math.min(min, currentSample.getSummarizerMin());
+//    }
+//    return min;
+//  }
+//
+//  public long getSummarizerSize() {
+//    long size=0;
+//    for (HttpSample currentSample : httpSampleList) {
+//        size+=currentSample.getSummarizerSamples();
+//    }
+//    return size;
+//  }
+//
+//  public String getSummarizerErrors() {
+//    float nbError = 0;
+//    for (HttpSample currentSample : httpSampleList) {
+//        nbError+=currentSample.getSummarizerErrors();
+//    }
+//    return new DecimalFormat("#.##").format(nbError/getSummarizerSize()*100).replace(",", ".");     
+//  }
 
-         ArrayList<XYDataset> dataset = new ArrayList<XYDataset> ();
-         TimeSeriesCollection resp = new TimeSeriesCollection();
-        // TimeSeriesCollection err  = new TimeSeriesCollection();
-         TimeSeries responseTime = new TimeSeries("Response Time", FixedMillisecond.class);
-        // TimeSeries errors = new TimeSeries("errors", Minute.class);
-         
-         for (int i=0; i<=this.httpSampleList.size()-1; i++) {
-             RegularTimePeriod current = new FixedMillisecond(this.httpSampleList.get(i).getDate());
-             responseTime.addOrUpdate(current,this.httpSampleList.get(i).getDuration());
-             //errors.addOrUpdate(current,report.getHttpSampleList().get(i).getSummarizerErrors());
-         }
 
-       resp.addSeries(responseTime);
-      // err.addSeries(errors);
-       dataset.add(resp);
-      // dataset.add(err);
-
-            ChartUtil.generateGraph(request, response,
-                                PerformanceProjectAction.createSummarizerTrend(dataset, uri),400, 200);
-     
-    }
-
-    private double roundTwoDecimals(double d) {
-        DecimalFormat twoDForm = new DecimalFormat("#.##");
-  	  return Double.valueOf(twoDForm.format(d));
-  	}
+  public abstract void doSummarizerTrendGraph(StaplerRequest request,
+      StaplerResponse response) throws IOException;
 
 }
